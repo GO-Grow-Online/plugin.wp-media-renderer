@@ -1,7 +1,7 @@
 {
-	"name": "GO - Media Renderer",
+	"name": "GO Wordpress Media Renderer",
 	"version": "1.0.0", 
-	"download_url": "https://github.com/GO-Grow-Online/plugin.wordpress-image-helper/archive/refs/heads/master.zip",
+	"download_url": "https://github.com/GO-Grow-Online/plugin.wp-media-renderer/archive/refs/heads/main.zip",
 
 	"homepage": "https://grow-online.be/",
 	"requires": "4.5", 

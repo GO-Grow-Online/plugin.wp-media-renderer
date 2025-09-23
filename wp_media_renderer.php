@@ -16,9 +16,9 @@ require 'plugin-update-checker/plugin-update-checker.php';
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 $myUpdateChecker = PucFactory::buildUpdateChecker(
-    'https://raw.githubusercontent.com/GO-Grow-Online/plugin.wordpress-image-helper/refs/heads/master/image-helper-version.json',
+    'https://raw.githubusercontent.com/GO-Grow-Online/plugin.wp-media-renderer/refs/heads/main/wp-media-renderer-version.json',
     __FILE__,
-    'wordpress-image-helper'
+    'wordpress-media-renderer'
 );
 
 
@@ -33,14 +33,14 @@ if (!function_exists('acf_add_local_field_group')) {
 
 // Plugin disactivation handle - mandatory to have it in main file with the use of __FILE__
 register_deactivation_hook(__FILE__, function () {
-    wp_clear_scheduled_hook('go_image_renderer_auto_license_check');
+    wp_clear_scheduled_hook('wp_media_renderer_auto_license_check');
 
     // Update WP db
-    update_option('go_image_renderer_license_status', 'inactive');
-    update_option('go_image_renderer_license_message', __('Le plugin a été désactivé. La licence est mise en pause.', 'Media renderer'));
+    update_option('wp_media_renderer_license_status', 'inactive');
+    update_option('wp_media_renderer_license_message', __('Le plugin a été désactivé. La licence est mise en pause.', 'Media renderer'));
 
     // Update licence database
-    $license_key = get_option('go_image_renderer_license_key', '');
+    $license_key = get_option('wp_media_renderer_license_key', '');
     $domain = home_url();
 
     if (!empty($license_key)) {
@@ -60,7 +60,7 @@ require_once __DIR__ . '/admin/wp_medias_settings.php';
 require_once __DIR__ . '/admin/acf_fields_settings.php';
 require_once __DIR__ . '/admin/licence.php';
 
-$license_status = get_option('go_image_renderer_license_status', 'inactive');
+$license_status = get_option('wp_media_renderer_license_status', 'inactive');
 
 // If licence is active, load functions
 if ($license_status === 'active') {
