@@ -1,0 +1,39 @@
+{
+	"name": "GO - Media Renderer",
+	"version": "2.0.3.0", 
+	"download_url": "https://github.com/GO-Grow-Online/plugin.wordpress-image-helper/archive/refs/heads/master.zip",
+
+	"homepage": "https://grow-online.be/",
+	"requires": "4.5", 
+	"tested": "4.8",
+	"last_updated": "2025-04-21 11:18:00",
+	"upgrade_notice": "Introducing video rendering : Image renderer becomes media renderer. Now rendering videos with a custom player and multiple fields and options with it (mute, autoplay,...)",
+
+	"author": "Grow Online", 
+	"author_homepage": "https://grow-online.be/",
+
+	"sections": {
+		"description": "Display medias with render_image() & render_video(), powerfull and light functions that brings performance and accessibility to your theme. ",
+		"installation": "Download and install the archive in your Wordpress site. Use render_image() & render_video() function to display lightweight and responsive images/videos. An easy way to gain accessibility and performances.",
+		"changelog": "2.0/n/n• NEW : Added render_video function !/nImage renderer now is media_renderer !.1.5.1/n/n• TWEAK : Force portrait mode was'nt working proprely./n/n• TWEAK : Mime type was changed on every media including svgs, a fix has been applied./n/n1.4.9/n/n• TWEAK : Mime type was changed on every media including video./n/n/n1.4.8/n/n• TWEAK : Fixed differences between mime types and image formats./n/n/nPreviously/n/n• WARNING : changed 'loading_type' to 'defer' bool./n• TWEAK : fixed a bug where placeholder image was not used as a fallback./n• TWEAK : ACF field are now generated in the plugin.",
+		"custom_section": "This is a custom section labeled 'Custom Section'."
+	},
+	
+	"icons" : {
+		"1x" : "http://w-shadow.com/files/external-update-example/assets/icon-128x128.png",
+		"2x" : "http://w-shadow.com/files/external-update-example/assets/icon-256x256.png"
+    },
+
+	"banners": {
+		"low": "http://w-shadow.com/files/external-update-example/assets/banner-772x250.png",
+		"high": "http://w-shadow.com/files/external-update-example/assets/banner-1544x500.png"
+	},
+
+	"translations": [],
+
+	"rating": 90,
+	"num_ratings": 123,
+
+	"downloaded": 1234,
+	"active_installs": 12345
+}

@@ -1,0 +1,36 @@
+///////////////////////
+/// IMAGES & VIDEOS ///
+///////////////////////
+
+.img-wrap, .vid-wrap {
+
+    img, video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+    
+    figure, picture {
+        width: 100%;
+        height: 100%;
+    }
+    
+    figure { margin: 0; }
+    
+    svg {
+        display: block;
+        box-sizing: border-box;
+    }
+    
+    &:not(.img-wrap--seamless) {
+        overflow: hidden;
+        border-radius: var(--go-media-radius, 5px);
+        box-shadow: var(--go-media-shadow, none);
+    }
+    
+    figcaption {
+        display: none;
+    }
+}

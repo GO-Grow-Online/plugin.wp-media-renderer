@@ -1,0 +1,14 @@
+{
+  "name": "GO-media-renderer",
+  "version": "1.0.0",
+  "description": "A SCSS compiler...",
+  "main": "index.js",
+  "devDependencies": {
+    "sass": "1.63.3"
+  },
+  "scripts": {
+    "start": "sass assets/scss/styles.scss:assets/css/wp_media_renderer.css -w --style=compressed"
+  },
+  "author": "Grow Online",
+  "license": "ISC"
+}
