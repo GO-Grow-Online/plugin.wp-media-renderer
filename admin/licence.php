@@ -4,8 +4,8 @@
 add_action('admin_menu', function () {
     add_submenu_page(
         'plugins.php',
-        'Plugin Licence',
-        'Plugin Licence',
+        'Media Renderer Licence',
+        'Media Renderer Licence',
         'manage_options',
         'wp-media-renderer-license',
         'wp_media_renderer_license_page'
@@ -20,7 +20,7 @@ function wp_media_renderer_license_page() {
 
     ?>
     <div class="wrap">
-        <h1>Licence - Image Renderer</h1>
+        <h1>Licence - Media Renderer</h1>
 
         <?php if (!empty($_GET['updated'])) : ?>
             <div class="notice notice-success is-dismissible">
@@ -81,7 +81,7 @@ add_action('admin_post_wp_media_renderer_save_license', function () {
 // Call endpoint for licence verification
 function wp_media_renderer_validate_license_key($license_key) {
     $domain = home_url();
-    $endpoint_url = "https://grow-online.be/licences/wp-media-renderer/licence-check.php";
+    $endpoint_url = "https://grow-online.be/licences/licence-check.php";
 
     // Delete old stored values to avoid cache issues
     delete_option('wp_media_renderer_license_status');
