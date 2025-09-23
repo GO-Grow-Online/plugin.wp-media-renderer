@@ -51,8 +51,8 @@ if (!function_exists('go_convert_to_webp')) {
 
 
 // Create Webp Format for each uploaded images
-if (!function_exists('go_convert_all_sizes_to_webp')) {
-    function go_convert_all_sizes_to_webp($metadata, $attachment_id) {
+if (!function_exists('wp_media_renderer_convert_to_webp')) {
+    function wp_media_renderer_convert_to_webp($metadata, $attachment_id) {
         
         // Only convert images
         $mime    = get_post_mime_type($attachment_id);
@@ -118,6 +118,6 @@ if (!function_exists('go_convert_all_sizes_to_webp')) {
         return $metadata;
     }
 
-    add_filter('wp_generate_attachment_metadata', 'go_convert_all_sizes_to_webp', 10, 2);
+    add_filter('wp_generate_attachment_metadata', 'wp_media_renderer_convert_to_webp', 10, 2);
 
 }

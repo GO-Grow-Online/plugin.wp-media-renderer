@@ -7,16 +7,16 @@ add_action('admin_menu', function () {
         'Plugin Licence',
         'Plugin Licence',
         'manage_options',
-        'go-image-renderer-license',
-        'go_image_renderer_license_page'
+        'wp-media-renderer-license',
+        'wp_media_renderer_license_page'
     );
 });
 
 // Create interface & field for key submission
-function go_image_renderer_license_page() {
-    $license_key = get_option('go_image_renderer_license_key', '');
-    $status = get_option('go_image_renderer_license_status', 'inactive');
-    $message = get_option('go_image_renderer_license_message', '');
+function wp_media_renderer_license_page() {
+    $license_key = get_option('wp_media_renderer_license_key', '');
+    $status = get_option('wp_media_renderer_license_status', 'inactive');
+    $message = get_option('wp_media_renderer_license_message', '');
 
     ?>
     <div class="wrap">
@@ -35,14 +35,14 @@ function go_image_renderer_license_page() {
         <?php endif; ?>
 
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-            <?php wp_nonce_field('go_image_renderer_license_nonce', 'go_image_renderer_license_nonce'); ?>
-            <input type="hidden" name="action" value="go_image_renderer_save_license">
+            <?php wp_nonce_field('wp_media_renderer_license_nonce', 'wp_media_renderer_license_nonce'); ?>
+            <input type="hidden" name="action" value="wp_media_renderer_save_license">
 
             <table class="form-table">
                 <tr>
-                    <th scope="row"><label for="go_image_renderer_license_key">Licence key</label></th>
+                    <th scope="row"><label for="wp_media_renderer_license_key">Licence key</label></th>
                     <td>
-                        <input type="text" name="go_image_renderer_license_key" id="go_image_renderer_license_key"
+                        <input type="text" name="wp_media_renderer_license_key" id="wp_media_renderer_license_key"
                                value="<?php echo esc_attr($license_key); ?>" class="regular-text">
                     </td>
                 </tr>
@@ -56,8 +56,8 @@ function go_image_renderer_license_page() {
 }
 
 // Form submission
-add_action('admin_post_go_image_renderer_save_license', function () {
-    if (!isset($_POST['go_image_renderer_license_nonce']) || !wp_verify_nonce($_POST['go_image_renderer_license_nonce'], 'go_image_renderer_license_nonce')) {
+add_action('admin_post_wp_media_renderer_save_license', function () {
+    if (!isset($_POST['wp_media_renderer_license_nonce']) || !wp_verify_nonce($_POST['wp_media_renderer_license_nonce'], 'wp_media_renderer_license_nonce')) {
         wp_die('Security error.');
     }
 
@@ -65,66 +65,67 @@ add_action('admin_post_go_image_renderer_save_license', function () {
         wp_die('Missing permissions.');
     }
 
-    $license_key = isset($_POST['go_image_renderer_license_key']) ? sanitize_text_field($_POST['go_image_renderer_license_key']) : '';
+    $license_key = isset($_POST['wp_media_renderer_license_key']) ? sanitize_text_field($_POST['wp_media_renderer_license_key']) : '';
 
     // Stock the key
-    update_option('go_image_renderer_license_key', $license_key);
+    update_option('wp_media_renderer_license_key', $license_key);
 
     // Key check
-    go_image_renderer_validate_license_key($license_key);
+    wp_media_renderer_validate_license_key($license_key);
 
     // Reload page with results
-    wp_redirect(admin_url('plugins.php?page=go-image-renderer-license&updated=true'));
+    wp_redirect(admin_url('plugins.php?page=wp-media-renderer-license&updated=true'));
     exit;
 });
 
 // Call endpoint for licence verification
-function go_image_renderer_validate_license_key($license_key) {
+function wp_media_renderer_validate_license_key($license_key) {
     $domain = home_url();
-    $endpoint_url = "https://grow-online.be/licences/go-image-renderer-licence-check.php";
+    $endpoint_url = "https://grow-online.be/licences/wp-media-renderer/licence-check.php";
 
     // Delete old stored values to avoid cache issues
-    delete_option('go_image_renderer_license_status');
-    delete_option('go_image_renderer_license_message');
+    delete_option('wp_media_renderer_license_status');
+    delete_option('wp_media_renderer_license_message');
 
     $response = wp_remote_post($endpoint_url, [
         'timeout' => 15,
         'body' => [
+            'license_key' => $license_key,
             'license_key' => $license_key,
             'domain'      => $domain
         ]
     ]);
 
     if (is_wp_error($response)) {
-        update_option('go_image_renderer_license_status', 'inactive');
-        update_option('go_image_renderer_license_message', 'Erreur de communication avec le serveur de licence.');
+        update_option('wp_media_renderer_license_status', 'inactive');
+        update_option('wp_media_renderer_license_message', 'Erreur de communication avec le serveur de licence.');
         return;
     }
 
     $data = json_decode(wp_remote_retrieve_body($response), true);
 
     if (!empty($data['success']) && $data['success'] === true) {
-        update_option('go_image_renderer_license_status', 'active');
-        update_option('go_image_renderer_license_message', $data['message']);
+        update_option('wp_media_renderer_license_status', 'active');
+        update_option('wp_media_renderer_license_message', $data['message']);
     } else {
-        update_option('go_image_renderer_license_status', 'inactive');
-        update_option('go_image_renderer_license_message', $data['message'] ?? 'Licence invalide.');
+        update_option('wp_media_renderer_license_status', 'inactive');
+        update_option('wp_media_renderer_license_message', $data['message'] ?? 'Licence invalide.');
     }
 }
 
 // Monthly verification
 add_action('wp', function () {
-    if (!wp_next_scheduled('go_image_renderer_auto_license_check')) {
-        wp_schedule_event(time(), 'monthly', 'go_image_renderer_auto_license_check');
+    if (!wp_next_scheduled('wp_media_renderer_auto_license_check')) {
+        wp_schedule_event(time(), 'monthly', 'wp_media_renderer_auto_license_check');
     }
 });
 
-add_action('go_image_renderer_auto_license_check', 'go_image_renderer_check_license_status');
+add_action('wp_media_renderer_auto_license_check', 'wp_media_renderer_check_license_status');
 
-function go_image_renderer_check_license_status() {
-    $license_key = get_option('go_image_renderer_license_key', '');
+function wp_media_renderer_check_license_status() {
+    $license_key = get_option('wp_media_renderer_license_key', '');
     $domain = home_url();
-    $endpoint_url = "https://grow-online.be/licences/go-image-renderer-licence-check.php";
+    $endpoint_url = "https://grow-online.be/licences/wp-media-renderer/licence-check.php";
 
     if (empty($license_key)) {
         return;
@@ -139,15 +140,15 @@ function go_image_renderer_check_license_status() {
     ]);
 
     if (is_wp_error($response)) {
-        update_option('go_image_renderer_license_status', 'inactive');
+        update_option('wp_media_renderer_license_status', 'inactive');
         return;
     }
 
     $data = json_decode(wp_remote_retrieve_body($response), true);
 
     if (!empty($data['success']) && $data['success'] === true) {
-        update_option('go_image_renderer_license_status', 'active');
+        update_option('wp_media_renderer_license_status', 'active');
     } else {
-        update_option('go_image_renderer_license_status', 'inactive');
+        update_option('wp_media_renderer_license_status', 'inactive');
     }
 }

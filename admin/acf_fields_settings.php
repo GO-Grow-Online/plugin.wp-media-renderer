@@ -8,14 +8,14 @@ if( function_exists('acf_add_local_field_group') ) {
         'title' => '<picture> element',
         'fields' => array(
             array(
-                'key' => 'image_renderer_force_portrait_field',
+                'key' => 'wp_media_renderer_force_portrait_field',
                 'label' => __('Force to display full image', 'go-media-renderer'),
                 'name' => 'force_portrait',
                 'type' => 'true_false',
                 'ui' => 1,
             ),
             array(
-                'key' => 'image_renderer_display_legend_field',
+                'key' => 'wp_media_renderer_display_legend_field',
                 'label' => __('Display legend if possible', 'go-media-renderer'),
                 'name' => 'display_legend',
                 'type' => 'true_false',
@@ -23,7 +23,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'image_renderer_mob_img',
+                'key' => 'wp_media_renderer_mob_img',
                 'label' => __('Mobile image', 'go-media-renderer'),
                 'name' => 'mob_img',
                 'type' => 'image',
@@ -33,7 +33,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'library' => 'all',
             ),
             array(
-                'key' => 'image_renderer_tab_img',
+                'key' => 'wp_media_renderer_tab_img',
                 'label' => __('Tablet image'),
                 'name' => 'tab_img',
                 'type' => 'image',
@@ -73,7 +73,7 @@ if( function_exists('acf_add_local_field_group') ) {
         'title' => __('Video element', 'go-media-renderer'),
         'fields' => array(
             array(
-                'key' => 'go_image_renderer_vid_fs',
+                'key' => 'wp_media_renderer_vid_fs',
                 'label' => __('Is the video fullscreen?', 'go-media-renderer'),
                 'name' => 'fs_vid',
                 'type' => 'true_false',
@@ -90,7 +90,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_autoplay',
+                'key' => 'wp_media_renderer_vid_autoplay',
                 'label' => __('Autoplay', 'go-media-renderer'),
                 'name' => 'autoplay',
                 'type' => 'true_false',
@@ -107,7 +107,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_muted',
+                'key' => 'wp_media_renderer_vid_muted',
                 'label' => __('Muted', 'go-media-renderer'),
                 'name' => 'muted',
                 'type' => 'true_false',
@@ -124,7 +124,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_loop',
+                'key' => 'wp_media_renderer_vid_loop',
                 'label' => __('Loop', 'go-media-renderer'),
                 'name' => 'loop',
                 'type' => 'true_false',
@@ -141,7 +141,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_controls',
+                'key' => 'wp_media_renderer_vid_controls',
                 'label' => __('Controls', 'go-media-renderer'),
                 'name' => 'controls',
                 'type' => 'true_false',
@@ -158,7 +158,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_controls_fs',
+                'key' => 'wp_media_renderer_vid_controls_fs',
                 'label' => __('Fullscreen button', 'go-media-renderer'),
                 'name' => 'controls_fs',
                 'type' => 'true_false',
@@ -175,7 +175,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_controls_muted',
+                'key' => 'wp_media_renderer_vid_controls_muted',
                 'label' => __('Mute button', 'go-media-renderer'),
                 'name' => 'controls_muted',
                 'type' => 'true_false',
@@ -192,7 +192,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'ui' => 1,
             ),
             array(
-                'key' => 'go_image_renderer_vid_thumbnail',
+                'key' => 'wp_media_renderer_vid_thumbnail',
                 'label' => __('Thumbnail', 'go-media-renderer'),
                 'name' => 'thumbnail',
                 'type' => 'image',
@@ -209,7 +209,7 @@ if( function_exists('acf_add_local_field_group') ) {
                 'library' => 'all',
             ),
             array(
-                'key' => 'go_image_renderer_vid_resp',
+                'key' => 'wp_media_renderer_vid_resp',
                 'label' => __('Video to display on mobile', 'go-media-renderer'),
                 'name' => 'vid_resp',
                 'type' => 'file',
