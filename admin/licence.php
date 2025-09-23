@@ -125,7 +125,7 @@ add_action('wp_media_renderer_auto_license_check', 'wp_media_renderer_check_lice
 function wp_media_renderer_check_license_status() {
     $license_key = get_option('wp_media_renderer_license_key', '');
     $domain = home_url();
-    $endpoint_url = "https://grow-online.be/licences/wp-media-renderer/licence-check.php";
+    $endpoint_url = "https://grow-online.be/licences/licence-check.php";
 
     if (empty($license_key)) {
         return;
@@ -134,6 +134,7 @@ function wp_media_renderer_check_license_status() {
     $response = wp_remote_post($endpoint_url, [
         'timeout' => 15,
         'body'    => [
+            'type' => 'wp_media_renderer',
             'license_key' => $license_key,
             'domain'      => $domain
         ]
