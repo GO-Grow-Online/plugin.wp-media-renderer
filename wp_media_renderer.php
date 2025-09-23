@@ -125,6 +125,6 @@ if ($license_status === 'active') {
 add_action('wp_enqueue_scripts', 'go_media_renderer_code');
 
 function go_media_renderer_code() {
-    wp_enqueue_script( 'go-media-renderer-js',  plugins_url('assets/js/go_media_renderer.js', __FILE__));
-    wp_enqueue_style( 'go-media-renderer-css', plugins_url('assets/css/go_media_renderer.css', __FILE__));
+    wp_enqueue_script( 'go-media-renderer-js',  plugins_url('assets/js/wp_media_renderer.js', __FILE__));
+    wp_enqueue_style( 'go-media-renderer-css', plugins_url('assets/css/wp_media_renderer.css', __FILE__));
 }
