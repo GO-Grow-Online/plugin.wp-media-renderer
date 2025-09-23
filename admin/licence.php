@@ -90,7 +90,7 @@ function wp_media_renderer_validate_license_key($license_key) {
     $response = wp_remote_post($endpoint_url, [
         'timeout' => 15,
         'body' => [
-            'license_key' => $license_key,
+            'type' => "wp_media_renderer",
             'license_key' => $license_key,
             'domain'      => $domain
         ]
