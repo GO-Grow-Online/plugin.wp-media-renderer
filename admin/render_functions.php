@@ -116,7 +116,7 @@ function render_image($args = []) {
                 <?php endif; ?>
 
             <?php else : ?>
-                <img class="img-wrap__img" width="650" height="650" loading="<?php echo esc_attr($loading) ?>" src="<?php echo esc_url(plugins_url('/assets/image_placeholder.svg', __FILE__)); ?>" alt="Logo de <?php bloginfo('name'); ?> - Aucune image trouvée">
+                <img class="img-wrap__img" width="650" height="650" loading="<?php echo esc_attr($loading) ?>" src="<?php echo esc_url(plugins_url('../assets/image_placeholder.svg', __FILE__)); ?>" alt="Logo de <?php bloginfo('name'); ?> - Aucune image trouvée">
             <?php endif; ?>
         </div>
 

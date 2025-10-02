@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GO - Media Renderer
  * Description: Display images & videos with render_image() & render_videos(), powerfull and light functions that brings performance and accessibility to your theme. 
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author URI: https://grow-online.be
  * Author: Grow Online
  */
