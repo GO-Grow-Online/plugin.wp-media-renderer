@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GO - Media Renderer
  * Description: Display images & videos with render_image() & render_videos(), powerfull and light functions that brings performance and accessibility to your theme. 
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author URI: https://grow-online.be
  * Author: Grow Online
  */
@@ -125,6 +125,6 @@ if ($license_status === 'active') {
 add_action('wp_enqueue_scripts', 'go_media_renderer_code');
 
 function go_media_renderer_code() {
-    wp_enqueue_script( 'go-media-renderer-js',  plugins_url('assets/js/wp_media_renderer.js', __FILE__));
-    wp_enqueue_style( 'go-media-renderer-css', plugins_url('assets/css/wp_media_renderer.css', __FILE__));
+    wp_enqueue_script( 'go-media-renderer-js',  plugins_url('assets/js/wp_media_renderer.js', __FILE__, array(), '1.0.0', array('strategy' => 'defer')));
+    wp_enqueue_style( 'go-media-renderer-css', plugins_url('assets/css/wp_media_renderer.css', __FILE__, array(), '1.0.0', array('strategy' => 'defer')));
 }
