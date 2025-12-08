@@ -36,6 +36,7 @@
     }
 
     &--portrait {
+        overflow: hidden;
         .img-wrap__img {
             object-fit: contain!important;
         }
