@@ -11,8 +11,17 @@ function init_defer_video() {
   if (videoWrappers.length) {
     videoWrappers.forEach(function(wrapper) {
       const video = wrapper.querySelector('.vid-wrap__video');
-      if (video) {
+      if (!video) return;
+
+      if (video.hasAttribute('autoplay')) {
+        // Autoplay: load the video immediately
         defer_video(video, wrapper);
+      } else {
+        // No autoplay: wait for the user to click the wrapper before loading
+        wrapper.addEventListener('click', function onFirstInteraction() {
+          wrapper.removeEventListener('click', onFirstInteraction);
+          defer_video(video, wrapper, true);
+        });
       }
     });
   }
@@ -137,8 +146,9 @@ function activate_video_controls(videoWrapper) {
  *
  * @param {HTMLVideoElement} video - The video element to load.
  * @param {HTMLElement} wrapper - The main video wrapper.
+ * @param {boolean} [playOnLoad=false] - Whether to start playback once the video is loaded.
  */
-function defer_video(video, wrapper) {
+function defer_video(video, wrapper, playOnLoad = false) {
   if (video) {
     const sources = video.querySelectorAll('source');
 
@@ -160,6 +170,9 @@ function defer_video(video, wrapper) {
                 wrapper.classList.remove('vid-wrap--loading');
                 activate_video_controls(wrapper);
                 video.removeEventListener('loadeddata', onLoadedData);
+                if (playOnLoad) {
+                  video.play();
+                }
               });
             }
           })
