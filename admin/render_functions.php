@@ -37,6 +37,7 @@ function render_image($args = []) {
         }
 
         $loading = $args['defer'] ? "lazy" : "eager";
+        $fetchpriority = $args['defer'] ? '' : ' fetchpriority="high"';
         $mime_type = $img['mime_type'] ?? '';
         $is_svg = $mime_type == 'image/svg+xml';
 
@@ -52,7 +53,7 @@ function render_image($args = []) {
                 <?php 
                 // Render blured bg image in "force_portrait" mode
                 if ($args['force_portrait'] && !$is_svg) { 
-                    echo '<!--googleoff: index--><img class="img-wrap__bg" loading="'. esc_attr($loading) .'" type="'. esc_attr($mime_type) .'" src="'. esc_url($img['sizes']['thumbnail']) .'" alt="'. esc_attr($img['alt']) .'"><!--googleon: index-->'; }
+                    echo '<!--googleoff: index--><img class="img-wrap__bg" loading="'. esc_attr($loading) .'"' . $fetchpriority . ' type="'. esc_attr($mime_type) .'" src="'. esc_url($img['sizes']['thumbnail']) .'" alt="'. esc_attr($img['alt']) .'"><!--googleon: index-->'; }
                 ?>
                 
                 <?php if ($args['figcaption']) : ?>
@@ -83,7 +84,7 @@ function render_image($args = []) {
                             <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($img['sizes']['medium']); ?>">
                         <?php endif; ?>
 
-                        <img class="img-wrap__img" width="<?php echo $w; ?>" width="<?php echo $h; ?>" loading="<?php echo esc_attr($loading); ?>" alt="<?php echo esc_attr($img['alt']); ?>" src="<?php echo esc_url($medium); ?>">
+                        <img class="img-wrap__img" width="<?php echo $w; ?>" height="<?php echo $h; ?>" loading="<?php echo esc_attr($loading); ?>"<?php echo $fetchpriority; ?> alt="<?php echo esc_attr($img['alt']); ?>" src="<?php echo esc_url($medium); ?>">
 
                     </picture>
                     <?php
@@ -97,10 +98,10 @@ function render_image($args = []) {
                             echo "<span class='admin-msg'>Format not found. Thumbnail loaded.</span>";
                         }
 
-                        printf('<img class="img-wrap__img" loading="%s" type="%s" src="%s" alt="%s" width="%d" height="%d">', esc_attr($loading), esc_attr($mime_type), esc_url($format), esc_attr($img['alt']), esc_attr($img['width']), esc_attr($img['height']));
+                        printf('<img class="img-wrap__img" loading="%s" %s type="%s" src="%s" alt="%s" width="%d" height="%d">', esc_attr($loading), $fetchpriority, esc_attr($mime_type), esc_url($format), esc_attr($img['alt']), esc_attr($img['width']), esc_attr($img['height']));
 
                     } else { // Is SVG
-                        printf('<img class="img-wrap__img" loading="%s" type="%s" src="%s" alt="%s" width="%d" height="%d">', esc_attr($loading), esc_attr($mime_type), esc_url($img['url']), esc_attr($img['alt']), esc_attr($img['width']), esc_attr($img['height']));
+                        printf('<img class="img-wrap__img" loading="%s" %s type="%s" src="%s" alt="%s" width="%d" height="%d">', esc_attr($loading), $fetchpriority, esc_attr($mime_type), esc_url($img['url']), esc_attr($img['alt']), esc_attr($img['width']), esc_attr($img['height']));
                     }
                 }
                 ?>
@@ -116,7 +117,7 @@ function render_image($args = []) {
                 <?php endif; ?>
 
             <?php else : ?>
-                <img class="img-wrap__img" width="650" height="650" loading="<?php echo esc_attr($loading) ?>" src="<?php echo esc_url(plugins_url('../assets/image_placeholder.svg', __FILE__)); ?>" alt="Logo de <?php bloginfo('name'); ?> - Aucune image trouvée">
+                <img class="img-wrap__img" width="650" height="650" loading="<?php echo esc_attr($loading) ?>"<?php echo $fetchpriority; ?> src="<?php echo esc_url(plugins_url('../assets/image_placeholder.svg', __FILE__)); ?>" alt="Logo de <?php bloginfo('name'); ?> - Aucune image trouvée">
             <?php endif; ?>
         </div>
 
@@ -192,24 +193,24 @@ function render_video($args = []) {
         <?php if ($controls): ?>
             <div class="vid-wrap__controls" data-state="hidden">
                 <button class="vid-wrap__controls__playpause" type="button" data-state="play" aria-label="<?php echo esc_attr(__('Play/Pause', 'go-media-renderer')); ?>">
-                    <?php echo get_svg(plugins_url('../assets/icons/play.svg', __FILE__), true); ?>
-                    <?php echo get_svg(plugins_url('../assets/icons/pause.svg', __FILE__), true); ?>
+                    <?php echo get_svg(dirname(__DIR__) . '/assets/icons/play.svg', true); ?>
+                    <?php echo get_svg(dirname(__DIR__) . '/assets/icons/pause.svg', true); ?>
                 </button>
                 <button class="vid-wrap__controls__stop" type="button" data-state="stop" aria-label="<?php echo esc_attr(__('Stop', 'go-media-renderer')); ?>">
-                    <?php echo get_svg(plugins_url('../assets/icons/stop.svg', __FILE__), true); ?>
+                    <?php echo get_svg(dirname(__DIR__) . '/assets/icons/stop.svg', true); ?>
                 </button>
                 <div class="vid-wrap__controls__progress">
                     <progress value="0" min="0"></progress>
                 </div>
                 <?php if (!$muted && $controls_muted): ?>
                     <button class="vid-wrap__controls__mute" type="button" data-state="mute" aria-label="<?php echo esc_attr(__('Activer/désactiver sourdine', 'go-media-renderer')); ?>">
-                        <?php echo get_svg(plugins_url('../assets/icons/mute.svg', __FILE__), true); ?>
-                        <?php echo get_svg(plugins_url('../assets/icons/unmute.svg', __FILE__), true); ?>
+                        <?php echo get_svg(dirname(__DIR__) . '/assets/icons/mute.svg', true); ?>
+                        <?php echo get_svg(dirname(__DIR__) . '/assets/icons/unmute.svg', true); ?>
                     </button>
                 <?php endif; ?>
                 <?php if ($controls_fs): ?>
                     <button class="vid-wrap__controls__fs" type="button" data-state="go-fullscreen" aria-label="<?php echo esc_attr(__('Plein écran', 'go-media-renderer')); ?>">
-                        <?php echo get_svg(plugins_url('../assets/icons/fullscreen.svg', __FILE__), true); ?>
+                        <?php echo get_svg(dirname(__DIR__) . '/assets/icons/fullscreen.svg', true); ?>
                     </button>
                 <?php endif; ?>
             </div>
@@ -243,10 +244,14 @@ function render_video($args = []) {
 }
 
 // Display svg's code instead of an 'img' element
-function get_svg( $media_file, $is_url = false ) {
-    if ($is_url) {
-        $html = file_get_contents( $media_file );
-        return $html;
+function get_svg( $media_file, $is_path = false ) {
+    if ($is_path) {
+        if (file_exists($media_file)) {
+            $html = file_get_contents( $media_file );
+            // Security: strip potentially malicious scripts/tags from SVG if needed, but since it's local, it's trusted.
+            return $html;
+        }
+        return '';
     }else{
         if ($media_file['mime_type'] === 'image/svg+xml') {
             $file_path = get_attached_file( $media_file['ID'] );
