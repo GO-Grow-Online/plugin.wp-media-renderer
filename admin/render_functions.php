@@ -141,6 +141,8 @@ function render_video($args = []) {
         'loop' => null,
         'muted' => false,
 
+        'defer' => true,
+
         'controls' => true,
         'controls_muted' => true,
         'controls_fs' => true,
@@ -236,7 +238,10 @@ function render_video($args = []) {
         <?php if (!empty($thumbnail_id)): ?>
             <?php
             // Votre fonction render_image() est appelée ici avec le bon format
-            render_image(['img' => get_field('thumbnail', $video['ID'])]);
+            render_image([
+                'img' => get_field('thumbnail', $video['ID']),
+                'defer' => $args['defer'],
+            ]);
             ?>
         <?php endif; ?>
     </div>
