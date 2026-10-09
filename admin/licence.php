@@ -1,6 +1,6 @@
 <?php
 
-// Redirection depuis l'ancienne URL plugins.php vers Outils (tools.php)
+// Redirect from former plugins.php URL to Tools (tools.php)
 add_action('admin_init', function () {
     global $pagenow;
     if ($pagenow === 'plugins.php' && isset($_GET['page']) && $_GET['page'] === 'wp-media-renderer-license') {
@@ -9,7 +9,7 @@ add_action('admin_init', function () {
     }
 });
 
-// Ajouter la page dans l'onglet par défaut "Outils" (tools.php)
+// Add menu page under default Tools tab (tools.php)
 add_action('admin_menu', function () {
     add_management_page(
         'Media Renderer',
@@ -20,7 +20,7 @@ add_action('admin_menu', function () {
     );
 });
 
-// Interface d'administration
+// Admin interface
 function wp_media_renderer_license_page() {
     $license_key = get_option('wp_media_renderer_license_key', '');
     $status      = get_option('wp_media_renderer_license_status', 'inactive');
@@ -51,17 +51,17 @@ function wp_media_renderer_license_page() {
             </div>
         <?php endif; ?>
 
-        <!-- Carte 1 : Assainissement de la médiathèque -->
+        <!-- Carte 1 : Passage en génération d'image à la volée -->
         <div class="card" style="max-width: 800px; padding: 20px; margin-top: 20px;">
-            <h2>Assainissement de la médiathèque</h2>
+            <h2>Passer en génération d'image à la volée</h2>
             <p>
-                Ce script parcourt les images de votre médiathèque pour alléger votre serveur :
+                Ce script optimise votre médiathèque pour basculer vers le nouveau moteur de génération dynamique :
             </p>
             <ul style="list-style: disc; margin-left: 20px; line-height: 1.6;">
-                <li>Convertit les images JPG et PNG en format léger <strong>WebP</strong>.</li>
-                <li>Supprime les formats originaux non-redimensionnés lorsque la version <code>scaled</code> existe.</li>
-                <li>Supprime les formats intermédiaires inutilisés (ex: <code>medium_large</code>, <code>1536x1536</code>, <code>2048x2048</code>) et ne conserve que les formats requis (<code>thumbnail</code>, <code>medium</code>, <code>large</code>).</li>
-                <li>Génère les formats manquants éventuels pour un affichage optimal avec <code>render_image()</code>.</li>
+                <li>Convertit l'image principale JPG/PNG en format léger <strong>WebP</strong>.</li>
+                <li>Supprime les originaux non redimensionnés lorsque la version <code>scaled</code> existe.</li>
+                <li>Supprime toutes les tailles d'images intermédiaires pré-générées non nécessaires pour libérer de l'espace disque.</li>
+                <li>Active la <strong>génération à la volée</strong> : seules les dimensions réellement appelées dans vos templates seront générées lors de l'exécution de <code>render_image()</code>.</li>
             </ul>
 
             <p style="margin-top: 15px;">
@@ -71,7 +71,7 @@ function wp_media_renderer_license_page() {
 
             <div style="margin-top: 20px;">
                 <button type="button" id="mr-start-clean-btn" class="button button-primary button-hero" <?php echo ($image_count === 0) ? 'disabled' : ''; ?>>
-                    Lancer l'assainissement de la médiathèque
+                    Passer en génération d'image à la volée
                 </button>
             </div>
 
@@ -93,7 +93,7 @@ function wp_media_renderer_license_page() {
             </div>
 
             <div id="mr-complete-notice" style="display: none; margin-top: 20px;" class="notice notice-success inline">
-                <p id="mr-complete-text"><strong>Assainissement terminé avec succès !</strong></p>
+                <p id="mr-complete-text"><strong>Passage en génération à la volée terminé avec succès !</strong></p>
             </div>
         </div>
 
@@ -156,7 +156,7 @@ function wp_media_renderer_license_page() {
         }
 
         startBtn.addEventListener('click', function() {
-            if (!confirm('Voulez-vous lancer l\'assainissement de la médiathèque ? Les versions PNG/JPG seront converties en WebP et les originaux lourds remplacés par les versions scaled.')) {
+            if (!confirm('Voulez-vous passer en génération d\'image à la volée ? Cette opération va convertir les images principales en WebP, supprimer les originaux lourds et supprimer les déclinaisons intermédiaires existantes pour libérer de l\'espace. Les formats nécessaires seront ensuite re-générés automatiquement à la volée lors de l\'affichage.')) {
                 return;
             }
 
@@ -277,30 +277,30 @@ function wp_media_renderer_license_page() {
     <?php
 }
 
-// Traitement de l'enregistrement de la licence
+// Handle license save request
 add_action('admin_post_wp_media_renderer_save_license', function () {
     if (!isset($_POST['wp_media_renderer_license_nonce']) || !wp_verify_nonce($_POST['wp_media_renderer_license_nonce'], 'wp_media_renderer_license_nonce')) {
-        wp_die('Erreur de sécurité.');
+        wp_die('Security error.');
     }
 
     if (!current_user_can('manage_options')) {
-        wp_die('Permissions insuffisantes.');
+        wp_die('Insufficient permissions.');
     }
 
     $license_key = isset($_POST['wp_media_renderer_license_key']) ? sanitize_text_field($_POST['wp_media_renderer_license_key']) : '';
 
-    // Stocker la clé
+    // Store key
     update_option('wp_media_renderer_license_key', $license_key);
 
-    // Vérifier la clé auprès du serveur
+    // Validate key with license server
     wp_media_renderer_validate_license_key($license_key);
 
-    // Rediriger vers Outils > Media Renderer
+    // Redirect to Tools > Media Renderer
     wp_redirect(admin_url('tools.php?page=wp-media-renderer-license&updated=true'));
     exit;
 });
 
-// Appel endpoint pour vérification de licence
+// Remote endpoint call for license validation
 function wp_media_renderer_validate_license_key($license_key) {
     $domain       = home_url();
     $endpoint_url = "https://grow-online.be/licences/licence-check.php";
@@ -319,7 +319,7 @@ function wp_media_renderer_validate_license_key($license_key) {
 
     if (is_wp_error($response)) {
         update_option('wp_media_renderer_license_status', 'inactive');
-        update_option('wp_media_renderer_license_message', 'Erreur de communication avec le serveur de licence.');
+        update_option('wp_media_renderer_license_message', 'Error communicating with license server.');
         return;
     }
 
@@ -330,11 +330,11 @@ function wp_media_renderer_validate_license_key($license_key) {
         update_option('wp_media_renderer_license_message', $data['message']);
     } else {
         update_option('wp_media_renderer_license_status', 'inactive');
-        update_option('wp_media_renderer_license_message', $data['message'] ?? 'Licence invalide.');
+        update_option('wp_media_renderer_license_message', $data['message'] ?? 'Invalid license.');
     }
 }
 
-// Vérification mensuelle de la licence
+// Monthly license status check
 add_action('wp', function () {
     if (!wp_next_scheduled('wp_media_renderer_auto_license_check')) {
         wp_schedule_event(time(), 'monthly', 'wp_media_renderer_auto_license_check');

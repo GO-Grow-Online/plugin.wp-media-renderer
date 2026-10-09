@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GO - Media Renderer
  * Description: Display images & videos with render_image() & render_videos(), powerfull and light functions that brings performance and accessibility to your theme. 
- * Version: 1.1.2
+ * Version: 1.2.0
  * Author URI: https://grow-online.be
  * Author: Grow Online
  */
@@ -31,15 +31,15 @@ if (!function_exists('acf_add_local_field_group')) {
 }
 
 
-// Plugin disactivation handle - mandatory to have it in main file with the use of __FILE__
+// Plugin deactivation handler - mandatory to have it in main file with the use of __FILE__
 register_deactivation_hook(__FILE__, function () {
     wp_clear_scheduled_hook('wp_media_renderer_auto_license_check');
 
-    // Update WP db
+    // Update WP database
     update_option('wp_media_renderer_license_status', 'inactive');
     update_option('wp_media_renderer_license_message', __('Le plugin a été désactivé. La licence est mise en pause.', 'Media renderer'));
 
-    // Update licence database
+    // Update remote license database
     $license_key = get_option('wp_media_renderer_license_key', '');
     $domain = home_url();
 
@@ -62,23 +62,21 @@ require_once __DIR__ . '/admin/licence.php';
 
 $license_status = get_option('wp_media_renderer_license_status', 'inactive');
 
-// If licence is active, load functions
+// If license is active, load functions
 if ($license_status === 'active') {
     require_once __DIR__ . '/admin/render_functions.php';
 } else {
     function render_image( $args = [] ) {
-        if ( empty( $args['img'] ) || ! is_array( $args['img'] ) || ! isset( $args['img']['ID'] ) ) {
-            if ( is_user_logged_in() ) {
-                echo '';
-            }
-            return;
+        $norm = function_exists('go_normalize_attachment_data') ? go_normalize_attachment_data($args['img'] ?? null) : [];
+        $image_id  = $norm['id'] ?? 0;
+        $image_url = $norm['url'] ?? '';
+
+        if ( ! $image_url && $image_id ) {
+            $image_url = wp_get_attachment_image_url( $image_id, 'full' );
         }
 
-        $image_id = $args['img']['ID'];
-        $image_url = wp_get_attachment_image_url( $image_id, 'full' );
-        
         if ( $image_url ) {
-            $alt_text = get_post_meta( $image_id, '_wp_attachment_image_alt', true );
+            $alt_text = !empty($norm['alt']) ? $norm['alt'] : get_post_meta( $image_id, '_wp_attachment_image_alt', true );
             printf( '<div class="img-wrap"><img src="%s" alt="%s" ></div>', esc_url( $image_url ), esc_attr( $alt_text ));
             if ( is_user_logged_in() ) {
                 echo "<span class='admin-msg'>" . __("Image renderer's licence is not active. The performances of your website are impacted.", "Media renderer") . "</span>";

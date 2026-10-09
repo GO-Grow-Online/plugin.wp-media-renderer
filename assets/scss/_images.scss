@@ -47,7 +47,7 @@
             display: block;
             background-color: var(--go-media-caption-bg, #fff);
             color: var(--go-media-caption-color, #000);
-            border-radius: var(--go-media-radius, 5px);
+            border-radius: calc(var(--go-media-radius, 5px) * .75);
             padding: calc(var(--go-media-sp, 1rem) * 0.25) calc(var(--go-media-sp, 1rem) * 0.75);
             
             position: absolute;

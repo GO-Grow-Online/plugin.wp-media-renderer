@@ -2,141 +2,252 @@
 
 function render_image($args = []) {
 
-        // If image is empty get placeholder in "general" option page
-        $img = $args['img'] ?: get_field('img_placeholder', 'options');
+    // If image is empty, look for placeholder in ACF options
+    $raw_img = !empty($args['img']) ? $args['img'] : (function_exists('get_field') ? get_field('img_placeholder', 'options') : null);
 
-        // Classes parameters - Can be overwritten by WebMaster in $args
-        // force_portrait   | create a blured bg image
-        // display_legend   | allow to show or hide <caption> 
-        // seamless         | add a class deleting default styles
-        $force_portrait = !empty($img) ? get_field('force_portrait', $img['id']) : false;
-        $display_legend = !empty($img) ? get_field('display_legend', $img['id']) : false;
-        $seamless = !empty($img) ? get_field('seamless', $img['id']) : false;
+    // Normalize image data (support int ID, ACF array, URL)
+    $norm   = go_normalize_attachment_data($raw_img);
+    $img_id = $norm['id'];
 
-        $defaults = [
-            'img' => null,
-            'format' => null,
-            'fs' => false,
-            'defer' => true,
+    // Retrieve ACF fields (with fallback to values passed in $args)
+    $acf_force_portrait = ($img_id && function_exists('get_field')) ? (bool) get_field('force_portrait', $img_id) : false;
+    $acf_display_legend = ($img_id && function_exists('get_field')) ? (bool) get_field('display_legend', $img_id) : false;
+    $acf_seamless       = ($img_id && function_exists('get_field')) ? (bool) get_field('seamless', $img_id) : false;
 
-            'seamless' => $seamless,
-            'force_portrait' => $force_portrait,
-            'display_legend' => $display_legend,
-            
-            // If display legend is true, we need <figcaption> anyway
-            'figcaption' => $display_legend,
-        ];
-        
-        // Combine both argument arrays - $args is primary
-        $args = wp_parse_args($args, $defaults);
+    $defaults = [
+        'img'            => null,
+        'format'         => null,
+        'sizes'          => null,
+        'crop'           => true,
+        'fs'             => false,
+        'defer'          => true,
+        'seamless'       => $acf_seamless,
+        'force_portrait' => $acf_force_portrait,
+        'display_legend' => $acf_display_legend,
+        'figcaption'     => $acf_display_legend,
+        'alt'            => null,
+        'class'          => '',
+        'img_class'      => '',
+    ];
 
-        // Validate 'img' argument
-        if ($args['img'] && (!is_array($args['img']) || !isset($args['img']['url']))) {
-            trigger_error('Invalid image format provided. Expected an array with a "url" key.', E_USER_WARNING);
-            $args['img'] = null;
-        }
+    $args = wp_parse_args($args, $defaults);
 
-        $loading = $args['defer'] ? "lazy" : "eager";
-        $fetchpriority = $args['defer'] ? '' : ' fetchpriority="high"';
-        $mime_type = $img['mime_type'] ?? '';
-        $is_svg = $mime_type == 'image/svg+xml';
+    $has_image     = !empty($norm['url']) || !empty($img_id);
+    $is_svg        = ($norm['mime_type'] === 'image/svg+xml') || preg_match('/\.svg$/i', $norm['url']);
+    $loading       = $args['defer'] ? "lazy" : "eager";
+    $fetchpriority = $args['defer'] ? '' : ' fetchpriority="high"';
 
-        ?>
+    // Alt text
+    $alt = !empty($args['alt']) ? $args['alt'] : (!empty($norm['alt']) ? $norm['alt'] : '');
 
-        <div class="img-wrap<?php 
-            echo $args['force_portrait'] ? ' img-wrap--portrait' : ''; 
-            echo $args['seamless'] ? ' img-wrap--seamless' : ''; 
-            echo $args['display_legend'] ? ' img-wrap--displayLegend' : ''; 
-            ?>">
+    // Caption and Schema.org metadata
+    $caption     = is_array($raw_img) && !empty($raw_img['caption']) ? $raw_img['caption'] : ($img_id ? wp_get_attachment_caption($img_id) : '');
+    $description = is_array($raw_img) && !empty($raw_img['description']) ? $raw_img['description'] : '';
+    $title       = is_array($raw_img) && !empty($raw_img['name']) ? $raw_img['name'] : ($img_id ? get_the_title($img_id) : '');
 
-            <?php if ($img) : ?>
-                <?php 
-                // Render blured bg image in "force_portrait" mode
-                if ($args['force_portrait'] && !$is_svg) { 
-                    $thumb_bg = $img['sizes']['thumbnail'] ?? ($img['url'] ?? '');
-                    echo '<!--googleoff: index--><img class="img-wrap__bg" loading="'. esc_attr($loading) .'"' . $fetchpriority . ' type="'. esc_attr($mime_type) .'" src="'. esc_url($thumb_bg) .'" alt="'. esc_attr($img['alt'] ?? '') .'"><!--googleon: index-->'; }
-                ?>
-                
-                <?php if ($args['figcaption']) : ?>
-                    <figure class="img-wrap__figure" itemscope itemtype="http://schema.org/ImageObject">
-                <?php endif; ?>
+    // Container CSS classes
+    $wrap_classes = ['img-wrap'];
+    if (!empty($args['force_portrait'])) $wrap_classes[] = 'img-wrap--portrait';
+    if (!empty($args['seamless']))       $wrap_classes[] = 'img-wrap--seamless';
+    if (!empty($args['display_legend'])) $wrap_classes[] = 'img-wrap--displayLegend';
+    if (!empty($args['class']))          $wrap_classes[] = esc_attr($args['class']);
 
-                <?php 
-                // Render picture content if no image format is set, and if file is svg only with tab or mob files assigned
-                $no_img_format = !$args['format'];
+    $img_class = 'img-wrap__img' . (!empty($args['img_class']) ? ' ' . esc_attr($args['img_class']) : '');
+    ?>
 
-                if ($no_img_format && !$is_svg) {
-                    $mob = get_field('mob_img', $img['id']);
-                    $tab = get_field('tab_img', $img['id']);
-                    $thumbnail = $mob ? ($mob['sizes']['thumbnail'] ?? ($mob['url'] ?? '')) : ($img['sizes']['thumbnail'] ?? ($img['url'] ?? ''));
-                    $medium    = $tab ? ($tab['sizes']['medium'] ?? ($tab['url'] ?? '')) : ($img['sizes']['medium'] ?? ($img['url'] ?? ''));
-                    $large     = $img['sizes']['large'] ?? $medium;
+    <div class="<?php echo esc_attr(implode(' ', $wrap_classes)); ?>">
 
-                    // Width & Height attr
-                    $w = $img['width'] ? $img['width'] : 650;
-                    $h = $img['height'] ? $img['height'] : 650;
-                    ?>
-                    <picture>
-                        <source media="(max-width: 500px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($thumbnail); ?>">
-                        <source media="(max-width: 1023px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($medium); ?>">
+        <?php if ($has_image) : ?>
+            <?php 
+            // 1. Blurred background image for "force_portrait" mode
+            if ($args['force_portrait'] && !$is_svg) {
+                $bg_thumb = go_resize_image_on_the_fly($raw_img, 'thumbnail', null, true);
+                $bg_url   = $bg_thumb['url'] ?? $norm['url'];
+                echo '<!--googleoff: index--><img class="img-wrap__bg" loading="' . esc_attr($loading) . '"' . $fetchpriority . ' type="image/webp" src="' . esc_url($bg_url) . '" alt="' . esc_attr($alt) . '"><!--googleon: index-->';
+            }
+            ?>
 
-                        <?php if ($args['fs']) : ?>
-                            <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($large); ?>">
-                        <?php elseif (($img['sizes']['medium'] ?? '') !== $medium) : ?>
-                            <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($img['sizes']['medium'] ?? $medium); ?>">
-                        <?php endif; ?>
+            <?php if ($args['figcaption']) : ?>
+                <figure class="img-wrap__figure" itemscope itemtype="http://schema.org/ImageObject">
+            <?php endif; ?>
 
-                        <img class="img-wrap__img" width="<?php echo $w; ?>" height="<?php echo $h; ?>" loading="<?php echo esc_attr($loading); ?>"<?php echo $fetchpriority; ?> alt="<?php echo esc_attr($img['alt']); ?>" src="<?php echo esc_url($medium); ?>">
-
-                    </picture>
-                    <?php
+            <?php
+            // CASE 2: Named format requested (e.g. 'small', 'medium', 'large') -> render simple <img>
+            if (!empty($args['format'])) {
+                if ($is_svg) {
+                    $img_src = $norm['url'];
+                    $w       = $norm['width'] ?: 650;
+                    $h       = $norm['height'] ?: 650;
+                    $mime    = 'image/svg+xml';
                 } else {
-                    
-                    if (!$is_svg) { // Has image format but is not svg
-                        
-                        // Fallback if the image format is not generated on the website
-                        $format = isset($img['sizes'][$args['format']]) ? $img['sizes'][$args['format']] : ($img['sizes']['thumbnail'] ?? ($img['url'] ?? ''));
-                        if (!isset($img['sizes'][$args['format']]) && is_user_logged_in()) {
-                            echo "<span class='admin-msg'>Format not found. Thumbnail loaded.</span>";
+                    $resized = go_resize_image_on_the_fly($raw_img, $args['format'], null, $args['crop']);
+                    $img_src = $resized['url'] ?? $norm['url'];
+                    $w       = $resized['width'] ?? ($norm['width'] ?: 650);
+                    $h       = $resized['height'] ?? ($norm['height'] ?: 650);
+                    $mime    = $resized['mime_type'] ?? 'image/webp';
+                }
+
+                printf(
+                    '<img class="%s" loading="%s"%s type="%s" src="%s" alt="%s" width="%d" height="%d">',
+                    esc_attr($img_class),
+                    esc_attr($loading),
+                    $fetchpriority,
+                    esc_attr($mime),
+                    esc_url($img_src),
+                    esc_attr($alt),
+                    (int) $w,
+                    (int) $h
+                );
+
+            // CASE 3: Custom size parameters defined per screen / media query
+            } elseif (!empty($args['sizes']) && is_array($args['sizes'])) {
+                if ($is_svg) {
+                    printf(
+                        '<img class="%s" loading="%s"%s type="image/svg+xml" src="%s" alt="%s" width="%d" height="%d">',
+                        esc_attr($img_class),
+                        esc_attr($loading),
+                        $fetchpriority,
+                        esc_url($norm['url']),
+                        esc_attr($alt),
+                        (int) ($norm['width'] ?: 650),
+                        (int) ($norm['height'] ?: 650)
+                    );
+                } else {
+                    $mob_img = ($img_id && function_exists('get_field')) ? get_field('mob_img', $img_id) : null;
+                    $tab_img = ($img_id && function_exists('get_field')) ? get_field('tab_img', $img_id) : null;
+
+                    $sources_html  = [];
+                    $fallback_data = null;
+
+                    // Accepts ['(max-width: 500px)' => [440, 500]] OR [['media' => '...', 'size' => [440, 500], 'crop' => true]]
+                    foreach ($args['sizes'] as $key => $rule) {
+                        if (is_array($rule) && isset($rule['media'])) {
+                            $media     = $rule['media'];
+                            $size_spec = $rule['size'] ?? $rule['sizes'] ?? null;
+                            $rule_crop = $rule['crop'] ?? $args['crop'];
+                        } else {
+                            $media     = $key;
+                            $size_spec = $rule;
+                            $rule_crop = $args['crop'];
                         }
 
-                        printf('<img class="img-wrap__img" loading="%s" %s type="%s" src="%s" alt="%s" width="%d" height="%d">', esc_attr($loading), $fetchpriority, esc_attr($mime_type), esc_url($format), esc_attr($img['alt']), esc_attr($img['width']), esc_attr($img['height']));
+                        // Art direction ACF mob_img / tab_img
+                        $target_img = $raw_img;
+                        if ($mob_img && preg_match('/max-width:\s*(?:[1-6]\d{2}|7[0-6]\d|500)px/i', $media)) {
+                            $target_img = $mob_img;
+                        } elseif ($tab_img && preg_match('/(?:max-width:\s*(?:102[0-4]|9\d{2})px|min-width:\s*7\d{2}px)/i', $media)) {
+                            $target_img = $tab_img;
+                        }
 
-                    } else { // Is SVG
-                        printf('<img class="img-wrap__img" loading="%s" %s type="%s" src="%s" alt="%s" width="%d" height="%d">', esc_attr($loading), $fetchpriority, esc_attr($mime_type), esc_url($img['url']), esc_attr($img['alt']), esc_attr($img['width']), esc_attr($img['height']));
+                        $resized = go_resize_image_on_the_fly($target_img, $size_spec, null, $rule_crop);
+                        if ($resized && !empty($resized['url'])) {
+                            $sources_html[] = sprintf(
+                                '<source media="%s" type="%s" srcset="%s">',
+                                esc_attr($media),
+                                esc_attr($resized['mime_type'] ?? 'image/webp'),
+                                esc_url($resized['url'])
+                            );
+                            $fallback_data = $resized;
+                        }
                     }
+
+                    if (!$fallback_data) {
+                        $fallback_data = go_resize_image_on_the_fly($raw_img, 'medium', null, $args['crop']);
+                    }
+                    $fb_url = $fallback_data['url'] ?? $norm['url'];
+                    $fb_w   = $fallback_data['width'] ?? ($norm['width'] ?: 650);
+                    $fb_h   = $fallback_data['height'] ?? ($norm['height'] ?: 650);
+                    ?>
+                    <picture>
+                        <?php echo implode("\n                        ", $sources_html); ?>
+                        <img class="<?php echo esc_attr($img_class); ?>" width="<?php echo (int) $fb_w; ?>" height="<?php echo (int) $fb_h; ?>" loading="<?php echo esc_attr($loading); ?>"<?php echo $fetchpriority; ?> alt="<?php echo esc_attr($alt); ?>" src="<?php echo esc_url($fb_url); ?>">
+                    </picture>
+                    <?php
                 }
-                ?>
 
-                <?php 
-                // Render figcaption 
-                if ($args['figcaption']) :
-                        if (!empty($img['caption'])) { echo '<figcaption class="img-wrap__figcaption">' . esc_html($img['caption']) . '</figcaption>'; }
-                        if (!empty($img['url'])) { echo '<meta itemprop="url" content="' . esc_html($img['url']) . '"/>'; }
-                        if (!empty($img['description'])) { echo '<meta itemprop="description" content="' . esc_html($img['description']) . '"/>'; }
-                        if (!empty($img['name'])) { echo '<meta itemprop="name" content="' . esc_html($img['name']) . '"/>'; } ?>
-                    </figure>
+            // CASE 1: Empty sizes -> standard default responsive logic
+            } else {
+                if ($is_svg) {
+                    printf(
+                        '<img class="%s" loading="%s"%s type="image/svg+xml" src="%s" alt="%s" width="%d" height="%d">',
+                        esc_attr($img_class),
+                        esc_attr($loading),
+                        $fetchpriority,
+                        esc_url($norm['url']),
+                        esc_attr($alt),
+                        (int) ($norm['width'] ?: 650),
+                        (int) ($norm['height'] ?: 650)
+                    );
+                } else {
+                    $mob_img = ($img_id && function_exists('get_field')) ? get_field('mob_img', $img_id) : null;
+                    $tab_img = ($img_id && function_exists('get_field')) ? get_field('tab_img', $img_id) : null;
+
+                    // Mobile (< 500px): mob_img if present, otherwise thumbnail
+                    $mob_src  = $mob_img ?: $raw_img;
+                    $mob_data = go_resize_image_on_the_fly($mob_src, 'thumbnail', null, true);
+                    $mob_url  = $mob_data['url'] ?? $norm['url'];
+
+                    // Tablet (< 1023px): tab_img if present, otherwise medium
+                    $tab_src  = $tab_img ?: $raw_img;
+                    $tab_data = go_resize_image_on_the_fly($tab_src, 'medium', null, false);
+                    $tab_url  = $tab_data['url'] ?? $norm['url'];
+
+                    // Desktop (>= 1024px): large if fullscreen, otherwise medium
+                    $desk_format = $args['fs'] ? 'large' : 'medium';
+                    $desk_data   = go_resize_image_on_the_fly($raw_img, $desk_format, null, false);
+                    $desk_url    = $desk_data['url'] ?? $norm['url'];
+
+                    $w = $desk_data['width'] ?? ($norm['width'] ?: 650);
+                    $h = $desk_data['height'] ?? ($norm['height'] ?: 650);
+                    ?>
+                    <picture>
+                        <source media="(max-width: 500px)" type="image/webp" srcset="<?php echo esc_url($mob_url); ?>">
+                        <source media="(max-width: 1023px)" type="image/webp" srcset="<?php echo esc_url($tab_url); ?>">
+                        <source media="(min-width: 1024px)" type="image/webp" srcset="<?php echo esc_url($desk_url); ?>">
+
+                        <img class="<?php echo esc_attr($img_class); ?>" width="<?php echo (int) $w; ?>" height="<?php echo (int) $h; ?>" loading="<?php echo esc_attr($loading); ?>"<?php echo $fetchpriority; ?> alt="<?php echo esc_attr($alt); ?>" src="<?php echo esc_url($desk_url); ?>">
+                    </picture>
+                    <?php
+                }
+            }
+            ?>
+
+            <?php if ($args['figcaption']) : ?>
+                <?php if (!empty($caption)) : ?>
+                    <figcaption class="img-wrap__figcaption"><?php echo esc_html($caption); ?></figcaption>
                 <?php endif; ?>
-
-            <?php else : ?>
-                <img class="img-wrap__img" width="650" height="650" loading="<?php echo esc_attr($loading) ?>"<?php echo $fetchpriority; ?> src="<?php echo esc_url(plugins_url('../assets/image_placeholder.svg', __FILE__)); ?>" alt="Logo de <?php bloginfo('name'); ?> - Aucune image trouvée">
+                <?php if (!empty($norm['url'])) : ?>
+                    <meta itemprop="url" content="<?php echo esc_url($norm['url']); ?>"/>
+                <?php endif; ?>
+                <?php if (!empty($description)) : ?>
+                    <meta itemprop="description" content="<?php echo esc_attr($description); ?>"/>
+                <?php endif; ?>
+                <?php if (!empty($title)) : ?>
+                    <meta itemprop="name" content="<?php echo esc_attr($title); ?>"/>
+                <?php endif; ?>
+                </figure>
             <?php endif; ?>
-        </div>
+
+        <?php else : ?>
+            <img class="img-wrap__img" width="650" height="650" loading="<?php echo esc_attr($loading); ?>"<?php echo $fetchpriority; ?> src="<?php echo esc_url(plugins_url('../assets/image_placeholder.svg', __FILE__)); ?>" alt="Logo de <?php bloginfo('name'); ?> - Aucune image trouvée">
+        <?php endif; ?>
+    </div>
 
     <?php
 }
 
 function render_video($args = []) {
 
-    $video = $args['video'];
+    $video = $args['video'] ?? null;
     
     if (empty($video)) {
         return;
     }
 
-    $force_portrait = !empty($img) ? get_field('force_portrait', $img['id']) : false;
-    $display_legend = !empty($img) ? get_field('display_legend', $img['id']) : false;
-    $seamless = !empty($img) ? get_field('seamless', $img['id']) : false;
+    $video_id = !empty($video['ID']) ? $video['ID'] : (!empty($video['id']) ? $video['id'] : 0);
+    $force_portrait = ($video_id && function_exists('get_field')) ? get_field('force_portrait', $video_id) : false;
+    $display_legend = ($video_id && function_exists('get_field')) ? get_field('display_legend', $video_id) : false;
+    $seamless       = ($video_id && function_exists('get_field')) ? get_field('seamless', $video_id) : false;
 
     $defaults = [
         'autoplay' => null,

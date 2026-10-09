@@ -1,32 +1,27 @@
 <?php
 
-// 1. Désactiver les formats 1536x1536 et 2048x2048
+// 1. Disable 1536x1536 and 2048x2048 image sizes
 function wp_media_renderer_remove_large_image_sizes() {
     remove_image_size('1536x1536');
     remove_image_size('2048x2048');
 }
 add_action('init', 'wp_media_renderer_remove_large_image_sizes');
 
-// 2. Seuil des grandes images (scaled) fixé à 2560px
+// 2. Big image size threshold (scaled) set to 2560px
 add_filter('big_image_size_threshold', function() {
     return 2560;
 });
 
-// 3. Désactiver les formats non nécessaires pour ne garder que thumbnail, medium et large (en plus du scaled)
+// 3. On-the-fly generation mode: no intermediate sizes pre-generated upon upload
 function wp_media_renderer_filter_image_sizes($sizes, $image_meta = []) {
-    $allowed = ['thumbnail', 'medium', 'large'];
-
-    foreach (array_keys($sizes) as $size_name) {
-        if (!in_array($size_name, $allowed, true)) {
-            unset($sizes[$size_name]);
-        }
-    }
-
-    return $sizes;
+    // No intermediate size is generated on upload.
+    // Only the scaled version (in WebP) will be created if the image exceeds 2560px.
+    // All required sizes will be generated dynamically on the fly via render_image().
+    return [];
 }
 add_filter('intermediate_image_sizes_advanced', 'wp_media_renderer_filter_image_sizes', 999, 2);
 
-// 4. Helper générique de conversion d'un fichier en WebP
+// 4. Generic helper to convert an image file to WebP
 if (!function_exists('go_convert_to_webp')) {
     function go_convert_to_webp(string $file, int $quality = 85): ?string {
         if (!file_exists($file)) {
@@ -36,7 +31,7 @@ if (!function_exists('go_convert_to_webp')) {
         $info = pathinfo($file);
         $ext  = strtolower($info['extension'] ?? '');
 
-        // Déjà au format WebP
+        // Already in WebP format
         if ($ext === 'webp') {
             return $file;
         }
@@ -54,7 +49,7 @@ if (!function_exists('go_convert_to_webp')) {
 
         $dest = $info['dirname'] . '/' . $info['filename'] . '.webp';
 
-        // Si le fichier de destination existe déjà et est distinct de la source
+        // If destination file already exists and differs from source
         if ($dest !== $file && file_exists($dest)) {
             @unlink($dest);
         }
@@ -66,7 +61,7 @@ if (!function_exists('go_convert_to_webp')) {
 
         $saved_path = is_array($res) && !empty($res['path']) ? $res['path'] : $dest;
 
-        // Supprimer le fichier d'origine non-webp une fois la conversion réussie
+        // Delete non-webp source file once conversion succeeded
         if ($saved_path !== $file && file_exists($file)) {
             @unlink($file);
         }
@@ -75,7 +70,7 @@ if (!function_exists('go_convert_to_webp')) {
     }
 }
 
-// 5. Helper pour obtenir le chemin relatif upload de WP
+// 5. Helper to get WordPress upload relative path
 function wp_media_renderer_get_relative_path(string $path): string {
     if (function_exists('_wp_relative_upload_path')) {
         return _wp_relative_upload_path($path);
@@ -85,7 +80,10 @@ function wp_media_renderer_get_relative_path(string $path): string {
     return str_replace($basedir, '', $path);
 }
 
-// 6. Hook exécuté lors de l'upload d'un média dans WordPress
+// Load on-the-fly image resizing and generation engine
+require_once __DIR__ . '/image_resizer.php';
+
+// 6. Hook executed upon media upload in WordPress
 if (!function_exists('wp_media_renderer_convert_to_webp')) {
     function wp_media_renderer_convert_to_webp($metadata, $attachment_id) {
         if (empty($metadata) || !is_array($metadata)) {
@@ -107,7 +105,7 @@ if (!function_exists('wp_media_renderer_convert_to_webp')) {
         $dir     = trailingslashit(pathinfo($attached_file, PATHINFO_DIRNAME));
         $quality = 85;
 
-        // 1) Supprimer l'originale uploadée non-redimensionnée si la version scaled a été créée
+        // 1) Delete non-scaled uploaded original if scaled version was created
         $orig_to_delete = null;
         if (!empty($metadata['original_image'])) {
             $orig_to_delete = $dir . wp_basename($metadata['original_image']);
@@ -123,7 +121,7 @@ if (!function_exists('wp_media_renderer_convert_to_webp')) {
             unset($metadata['original_image']);
         }
 
-        // 2) Convertir toutes les tailles générées en WebP et supprimer leurs sources JPG/PNG
+        // 2) Convert any residual generated sizes to WebP
         if (!empty($metadata['sizes']) && is_array($metadata['sizes'])) {
             foreach ($metadata['sizes'] as $key => &$size) {
                 if (empty($size['file'])) {
@@ -144,7 +142,7 @@ if (!function_exists('wp_media_renderer_convert_to_webp')) {
             unset($size);
         }
 
-        // 3) Convertir l'image principale (scaled ou image normale) en WebP
+        // 3) Convert main image (scaled or original) to WebP
         if (strtolower(pathinfo($attached_file, PATHINFO_EXTENSION)) !== 'webp') {
             $new_main = go_convert_to_webp($attached_file, $quality);
             if ($new_main) {
@@ -153,7 +151,7 @@ if (!function_exists('wp_media_renderer_convert_to_webp')) {
             }
         }
 
-        // 4) Mettre à jour le type MIME dans la base de données
+        // 4) Update MIME type in database
         wp_update_post([
             'ID'             => $attachment_id,
             'post_mime_type' => 'image/webp',
@@ -165,7 +163,7 @@ if (!function_exists('wp_media_renderer_convert_to_webp')) {
     add_filter('wp_generate_attachment_metadata', 'wp_media_renderer_convert_to_webp', 10, 2);
 }
 
-// 7. Fonction d'assainissement d'une image existante
+// 7. Media library sanitation and migration to on-the-fly generation
 function wp_media_renderer_sanitize_single_image(int $id): array {
     $stats = [
         'attachment_id' => $id,
@@ -197,7 +195,7 @@ function wp_media_renderer_sanitize_single_image(int $id): array {
     $quality      = 85;
     $meta_changed = false;
 
-    // 1. Suppression de l'originale non-redimensionnée si la version scaled existe
+    // 1. Delete unscaled original file if scaled version exists
     $orig_file = null;
     if (!empty($meta['original_image'])) {
         $orig_file = $dir . wp_basename($meta['original_image']);
@@ -220,9 +218,7 @@ function wp_media_renderer_sanitize_single_image(int $id): array {
         }
     }
 
-    // 2. Nettoyage des formats inutilisés & conversion des formats autorisés
-    $allowed_sizes = ['thumbnail', 'medium', 'large'];
-
+    // 2. Delete ALL existing intermediate sizes (100% on-the-fly migration)
     if (!empty($meta['sizes']) && is_array($meta['sizes'])) {
         foreach ($meta['sizes'] as $size_key => $size_info) {
             if (empty($size_info['file'])) {
@@ -230,86 +226,31 @@ function wp_media_renderer_sanitize_single_image(int $id): array {
             }
             $size_path = $dir . $size_info['file'];
 
-            // Si format non autorisé -> suppression du fichier physique et de la méta
-            if (!in_array($size_key, $allowed_sizes, true)) {
-                if (file_exists($size_path)) {
-                    $s_size = filesize($size_path);
-                    if (@unlink($size_path)) {
-                        $stats['freed'] += $s_size;
-                        $stats['deleted']++;
-                    }
+            if (file_exists($size_path) && $size_path !== $attached_file) {
+                $s_size = filesize($size_path);
+                if (@unlink($size_path)) {
+                    $stats['freed'] += $s_size;
+                    $stats['deleted']++;
                 }
-                // Si un fichier webp existait également pour ce format supprimé
-                $webp_extra = preg_replace('/\.(jpe?g|png)$/i', '.webp', $size_path);
-                if ($webp_extra !== $size_path && file_exists($webp_extra)) {
-                    $w_size = filesize($webp_extra);
-                    if (@unlink($webp_extra)) {
-                        $stats['freed'] += $w_size;
-                        $stats['deleted']++;
-                    }
-                }
-                unset($meta['sizes'][$size_key]);
-                $meta_changed = true;
-            } else {
-                // Format autorisé -> conversion en WebP
-                if (file_exists($size_path)) {
-                    $ext = strtolower(pathinfo($size_path, PATHINFO_EXTENSION));
-                    if ($ext !== 'webp') {
-                        $old_bytes     = filesize($size_path);
-                        $new_size_file = go_convert_to_webp($size_path, $quality);
-                        if ($new_size_file && file_exists($new_size_file)) {
-                            $new_bytes = filesize($new_size_file);
-                            if ($old_bytes > $new_bytes) {
-                                $stats['freed'] += ($old_bytes - $new_bytes);
-                            }
-                            $stats['converted']++;
-                            $meta['sizes'][$size_key]['file']      = wp_basename($new_size_file);
-                            $meta['sizes'][$size_key]['mime-type'] = 'image/webp';
-                            $meta_changed = true;
-                        }
-                    }
+            }
+
+            // Also delete associated WebP or JPG/PNG versions
+            $webp_extra = preg_replace('/\.(jpe?g|png)$/i', '.webp', $size_path);
+            if ($webp_extra !== $size_path && file_exists($webp_extra) && $webp_extra !== $attached_file) {
+                $w_size = filesize($webp_extra);
+                if (@unlink($webp_extra)) {
+                    $stats['freed'] += $w_size;
+                    $stats['deleted']++;
                 }
             }
         }
+
+        // Reset pre-generated sizes metadata: will be created strictly on-the-fly when needed
+        $meta['sizes'] = [];
+        $meta_changed = true;
     }
 
-    // 3. Si des formats autorisés manquent (ex: thumbnail ou large n'avaient pas été générés),
-    // les générer puis les convertir
-    $missing_sizes = false;
-    foreach ($allowed_sizes as $s_name) {
-        if (empty($meta['sizes'][$s_name])) {
-            $missing_sizes = true;
-            break;
-        }
-    }
-    if ($missing_sizes && function_exists('wp_create_image_subsizes')) {
-        $subsizes = wp_create_image_subsizes($attached_file, $id);
-        if (is_array($subsizes) && !empty($subsizes)) {
-            if (empty($meta['sizes'])) {
-                $meta['sizes'] = [];
-            }
-            foreach ($subsizes as $s_key => $s_info) {
-                if (in_array($s_key, $allowed_sizes, true) && !empty($s_info['file'])) {
-                    $s_path = $dir . $s_info['file'];
-                    if (file_exists($s_path)) {
-                        $ext = strtolower(pathinfo($s_path, PATHINFO_EXTENSION));
-                        if ($ext !== 'webp') {
-                            $new_s = go_convert_to_webp($s_path, $quality);
-                            if ($new_s) {
-                                $s_info['file']      = wp_basename($new_s);
-                                $s_info['mime-type'] = 'image/webp';
-                                $stats['converted']++;
-                            }
-                        }
-                    }
-                    $meta['sizes'][$s_key] = $s_info;
-                    $meta_changed = true;
-                }
-            }
-        }
-    }
-
-    // 4. Conversion de l'image principale (scaled ou normale) en WebP
+    // 3. Convert main image (scaled or normal) to WebP if needed
     $main_ext = strtolower(pathinfo($attached_file, PATHINFO_EXTENSION));
     if ($main_ext !== 'webp') {
         $old_main_bytes = filesize($attached_file);
@@ -326,7 +267,7 @@ function wp_media_renderer_sanitize_single_image(int $id): array {
         }
     }
 
-    // 5. Sauvegarder métadonnées et mettre à jour le MIME type
+    // 4. Save metadata and update MIME type
     if ($meta_changed) {
         wp_update_attachment_metadata($id, $meta);
     }
@@ -340,11 +281,11 @@ function wp_media_renderer_sanitize_single_image(int $id): array {
     return $stats;
 }
 
-// 8. AJAX: Récupérer la liste des IDs d'images à assainir
+// 8. AJAX: Retrieve list of image attachment IDs to clean
 add_action('wp_ajax_wp_media_renderer_get_clean_ids', function() {
     check_ajax_referer('wp_media_renderer_clean_nonce', 'nonce');
     if (!current_user_can('manage_options')) {
-        wp_send_json_error(['message' => 'Permissions insuffisantes.']);
+        wp_send_json_error(['message' => 'Insufficient permissions.']);
     }
 
     $ids = get_posts([
@@ -361,11 +302,11 @@ add_action('wp_ajax_wp_media_renderer_get_clean_ids', function() {
     ]);
 });
 
-// 9. AJAX: Traiter un lot d'images
+// 9. AJAX: Process batch of images
 add_action('wp_ajax_wp_media_renderer_clean_batch', function() {
     check_ajax_referer('wp_media_renderer_clean_nonce', 'nonce');
     if (!current_user_can('manage_options')) {
-        wp_send_json_error(['message' => 'Permissions insuffisantes.']);
+        wp_send_json_error(['message' => 'Insufficient permissions.']);
     }
 
     $ids = isset($_POST['ids']) && is_array($_POST['ids']) ? array_map('intval', $_POST['ids']) : [];
@@ -391,7 +332,7 @@ add_action('wp_ajax_wp_media_renderer_clean_batch', function() {
     ]);
 });
 
-// 10. Fallback direct via URL pour script ou CLI (compatibilité rétroactive avec le script de l'utilisateur)
+// 10. Direct CLI or URL fallback (backwards compatibility)
 add_action('init', function() {
     if (!isset($_GET['clean_original_images']) || !current_user_can('manage_options')) {
         return;
@@ -417,7 +358,7 @@ add_action('init', function() {
     }
 
     wp_die(sprintf(
-        'Nettoyage et assainissement terminés : %d images traitées, %d fichiers convertis en WebP, %d fichiers originaux supprimés (%s libérés).',
+        'Media cleanup finished: %d images processed, %d files converted to WebP, %d original files deleted (%s freed).',
         count($attachments),
         $total_converted,
         $total_deleted,
