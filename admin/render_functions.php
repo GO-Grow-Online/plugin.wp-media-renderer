@@ -32,6 +32,15 @@ function render_image($args = []) {
 
     $args = wp_parse_args($args, $defaults);
 
+    // Auto-detect if 'sizes' was passed as a single dimension array (e.g. [250, 250])
+    // rather than a media queries map (e.g. ['(max-width: 500px)' => [420, 220]])
+    if (empty($args['format']) && !empty($args['sizes']) && is_array($args['sizes'])) {
+        if (isset($args['sizes'][0]) && is_numeric($args['sizes'][0])) {
+            $args['format'] = $args['sizes'];
+            $args['sizes']  = null;
+        }
+    }
+
     $has_image     = !empty($norm['url']) || !empty($img_id);
     $is_svg        = ($norm['mime_type'] === 'image/svg+xml') || preg_match('/\.svg$/i', $norm['url']);
     $loading       = $args['defer'] ? "lazy" : "eager";

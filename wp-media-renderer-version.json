@@ -1,6 +1,6 @@
 {
 	"name": "GO Wordpress Media Renderer",
-	"version": "1.2.0", 
+	"version": "1.2.1", 
 	"download_url": "https://github.com/GO-Grow-Online/plugin.wp-media-renderer/archive/refs/heads/main.zip",
 
 	"homepage": "https://grow-online.be/",
@@ -15,7 +15,7 @@
 	"sections": {
 		"description": "Display medias with render_image() & render_video(), powerfull and light functions that brings performance and accessibility to your theme. ",
 		"installation": "Download and install the archive in your Wordpress site. Use render_image() & render_video() function to display lightweight and responsive images/videos. An easy way to gain accessibility and performances.",
-		"changelog": "",
+		"changelog": "1.2.1 : format not take an array [w x h] and generate the required image. 'sizes' is dedicated to responsive sizes map for the srcset attribute.",
 		"Requirements": "Advanced Custom Fields (ACF) is required to make this plugin work."
 	},
 	

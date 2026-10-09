@@ -168,6 +168,8 @@ function go_resolve_target_dimensions($size, $height = null, $crop = true): arra
         $result['height'] = (int) ($size[1] ?? $size['h'] ?? $size['height'] ?? 0);
         if (isset($size['crop'])) {
             $result['crop'] = $size['crop'];
+        } elseif (isset($size[2])) {
+            $result['crop'] = (bool) $size[2];
         }
         return $result;
     }
