@@ -53,7 +53,8 @@ function render_image($args = []) {
                 <?php 
                 // Render blured bg image in "force_portrait" mode
                 if ($args['force_portrait'] && !$is_svg) { 
-                    echo '<!--googleoff: index--><img class="img-wrap__bg" loading="'. esc_attr($loading) .'"' . $fetchpriority . ' type="'. esc_attr($mime_type) .'" src="'. esc_url($img['sizes']['thumbnail']) .'" alt="'. esc_attr($img['alt']) .'"><!--googleon: index-->'; }
+                    $thumb_bg = $img['sizes']['thumbnail'] ?? ($img['url'] ?? '');
+                    echo '<!--googleoff: index--><img class="img-wrap__bg" loading="'. esc_attr($loading) .'"' . $fetchpriority . ' type="'. esc_attr($mime_type) .'" src="'. esc_url($thumb_bg) .'" alt="'. esc_attr($img['alt'] ?? '') .'"><!--googleon: index-->'; }
                 ?>
                 
                 <?php if ($args['figcaption']) : ?>
@@ -67,8 +68,9 @@ function render_image($args = []) {
                 if ($no_img_format && !$is_svg) {
                     $mob = get_field('mob_img', $img['id']);
                     $tab = get_field('tab_img', $img['id']);
-                    $thumbnail = $mob ? $mob['sizes']['thumbnail'] : $img['sizes']['thumbnail'];
-                    $medium = $tab ? $tab['sizes']['medium'] : $img['sizes']['medium'];
+                    $thumbnail = $mob ? ($mob['sizes']['thumbnail'] ?? ($mob['url'] ?? '')) : ($img['sizes']['thumbnail'] ?? ($img['url'] ?? ''));
+                    $medium    = $tab ? ($tab['sizes']['medium'] ?? ($tab['url'] ?? '')) : ($img['sizes']['medium'] ?? ($img['url'] ?? ''));
+                    $large     = $img['sizes']['large'] ?? $medium;
 
                     // Width & Height attr
                     $w = $img['width'] ? $img['width'] : 650;
@@ -79,9 +81,9 @@ function render_image($args = []) {
                         <source media="(max-width: 1023px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($medium); ?>">
 
                         <?php if ($args['fs']) : ?>
-                            <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($img['sizes']['large']); ?>">
-                        <?php elseif ($img['sizes']['medium'] !== $medium) : ?>
-                            <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($img['sizes']['medium']); ?>">
+                            <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($large); ?>">
+                        <?php elseif (($img['sizes']['medium'] ?? '') !== $medium) : ?>
+                            <source media="(min-width: 1024px)" type="<?php echo esc_attr($mime_type); ?>" srcset="<?php echo esc_url($img['sizes']['medium'] ?? $medium); ?>">
                         <?php endif; ?>
 
                         <img class="img-wrap__img" width="<?php echo $w; ?>" height="<?php echo $h; ?>" loading="<?php echo esc_attr($loading); ?>"<?php echo $fetchpriority; ?> alt="<?php echo esc_attr($img['alt']); ?>" src="<?php echo esc_url($medium); ?>">
@@ -93,7 +95,7 @@ function render_image($args = []) {
                     if (!$is_svg) { // Has image format but is not svg
                         
                         // Fallback if the image format is not generated on the website
-                        $format = isset($img['sizes'][$args['format']]) ? $img['sizes'][$args['format']] : $img['sizes']['thumbnail'];
+                        $format = isset($img['sizes'][$args['format']]) ? $img['sizes'][$args['format']] : ($img['sizes']['thumbnail'] ?? ($img['url'] ?? ''));
                         if (!isset($img['sizes'][$args['format']]) && is_user_logged_in()) {
                             echo "<span class='admin-msg'>Format not found. Thumbnail loaded.</span>";
                         }

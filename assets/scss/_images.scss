@@ -52,6 +52,7 @@
             
             position: absolute;
             left: calc(var(--go-media-radius, 5px) * 0.5);
+            right: calc(var(--go-media-radius, 5px) * 0.5);
             bottom: calc(var(--go-media-radius, 5px) * 0.5);
         }
     }
